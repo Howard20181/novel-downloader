@@ -313,7 +313,8 @@ export function getUI(): () => UIObject {
         return defaultObject;
       };
     }
-    case "new-read.readmoo.com": {
+    case "new-read.readmoo.com":
+    case "next.readmoo.com": {
       return () => ({ type: "download", isSettingSeen: false });
     }
     case "www.myrics.com": {

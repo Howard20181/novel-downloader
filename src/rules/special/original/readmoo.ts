@@ -9,6 +9,48 @@ import { gfetch, GfetchRequestInit, ggetText } from "../../../lib/http";
 import { Chapter } from "../../../main/Chapter";
 import { deepcopy } from "../../../lib/misc";
 
+function decodeMaybe(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function getCognitoAccessToken(): string | null {
+  const cookieMatch = document.cookie.match(
+    /(?:^|;\s*)CognitoIdentityServiceProvider\.[^;=]+\.accessToken=([^;]+)/
+  );
+  if (cookieMatch?.[1]) {
+    return decodeMaybe(cookieMatch[1]);
+  }
+
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith("CognitoIdentityServiceProvider.") && key.endsWith(".accessToken")) {
+        const value = localStorage.getItem(key);
+        if (value) {
+          return decodeMaybe(value);
+        }
+      }
+    }
+  } catch {
+    // localStorage 不可用时忽略
+  }
+
+  return null;
+}
+
+function getBookId(): string {
+  const parts = document.location.pathname.split("/").filter(Boolean);
+  const last = parts[parts.length - 1] ?? "";
+  if (/^\d+$/.test(last) || last) {
+    return last;
+  }
+  throw new Error("无法从当前页面解析 Readmoo bookId。");
+}
+
 export class Readmoo extends BaseRuleClass {
   public constructor() {
     super();
@@ -19,12 +61,14 @@ export class Readmoo extends BaseRuleClass {
   public async bookParse(): Promise<Book> {
     const Base = "https://reader.readmoo.com";
     const navBase = `${Base}/api/book/`;
-    // https://reader.readmoo.com/_single-bundle/mooreader-js-viewer_all.min.js?b=3.12.9_756
+    const accessToken = getCognitoAccessToken();
+    if (!accessToken) {
+      throw new Error("未检测到 Readmoo 登录状态，请先登录后再下载。");
+    }
     const headers = {
       Accept: "*/*",
-      Authorization: "bearer TWBLXfuP-NbtCrjD2PAiFA",
-      Referer: "https://reader.readmoo.com/reader/index.html",
-      "X-Requested-With": "XMLHttpRequest",
+      Authorization: `bearer ${accessToken}`,
+      Referer: document.location.href,
     };
     const navInit: GfetchRequestInit = {
       headers,
@@ -48,11 +92,14 @@ export class Readmoo extends BaseRuleClass {
       },
     ];
 
-    const bookId = document.location.pathname.split("/").slice(-1)[0];
+    const bookId = getBookId();
     const navUrl = `${navBase}${bookId}/nav`;
     const navResp = await gfetch(navUrl, navInit);
     const navData = navResp.response as nav;
-    if (navData.message !== "success") {
+    if (navResp.status === 403 || navData?.message === "not login") {
+      throw new Error("Readmoo 登录已失效，请刷新页面并重新登录后再下载。");
+    }
+    if (navData?.message !== "success" || !navData.base) {
       throw new Error("获取 nav 失败！");
     }
 

@@ -232,7 +232,8 @@ export async function getRule(): Promise<BaseRuleClass> {
       ruleClass = Youdubook;
       break;
     }
-    case "new-read.readmoo.com": {
+    case "new-read.readmoo.com":
+    case "next.readmoo.com": {
       const { Readmoo } = await import("../rules/special/original/readmoo");
       ruleClass = Readmoo;
       break;
