@@ -1,7 +1,6 @@
 import defaultMainStyleText from "./main.css";
 import defaultTocStyleText from "./toc.css";
 import { Chapter } from "../main/Chapter";
-import { fullWidthLength } from "../lib/dom";
 import { Book } from "../main/Book";
 
 class Common {
@@ -105,15 +104,14 @@ export class Options extends Common {
 
   public genSectionText(sectionName: string) {
     return (
-      `${"=".repeat(20)}\n\n\n\n# ${sectionName}\n\n\n\n${"=".repeat(20)}` +
+      `${"…".repeat(20)}\n\n\n\n# ${sectionName}\n\n\n\n${"…".repeat(20)}` +
       "\n\n"
     );
   }
 
   public genChapterText(chapterName: string, contentText: string) {
-    return `${chapterName}\n${"=".repeat(
-      fullWidthLength(chapterName) * 2 + 10
-    )}\n\n${contentText}\n\n`;
+    // 分隔线置于章节名上方，且使用省略号避免被朗读软件读成“等于”
+    return `${"…".repeat(30)}\n${chapterName}\n\n${contentText}\n\n`;
   }
 
   public genChapterEpub(contentXHTML: string) {
