@@ -171,11 +171,10 @@ export class Xkzw extends BaseRuleClass {
 
     let chapterNumber = 0;
     let sectionNumber = 0;
-    let sectionName = null;
     let sectionChapterNumber = 0;
     for (const column of siteChapterList.columnlist) {
       sectionNumber++;
-      sectionName = column.columnname;
+      const sectionName = column.columnname;
       for (const sitechapter of column.chapterlist) {
         chapterNumber++;
         sectionChapterNumber++;

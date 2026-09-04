@@ -281,7 +281,7 @@ export class OCRDecoder {
   private configureONNXRuntime(): void {
     try {
       // Set the correct base path for ONNX Runtime WASM files
-      ort.env.wasm.wasmPaths = "https://unpkg.com/onnxruntime-web@1.22.0/dist/";
+      ort.env.wasm.wasmPaths = "https://unpkg.com/onnxruntime-web@1.29.0/dist/";
 
       // Multi-thread has 1) limited support in browsers, 2) has CORS issue getting wasm
       // If we want to use multi-thread, we need to dynamically load wasm files to wasmBinary
@@ -496,7 +496,7 @@ export class OCRDecoder {
   private async uint8ArrayToImageData(uint8Array: Uint8Array): Promise<ImageData | null> {
     try {
       // Create a blob from the Uint8Array
-      const blob = new Blob([uint8Array]);
+      const blob = new Blob([uint8Array as BlobPart]);
       
       // Create an image element and load the blob
       const img = new Image();

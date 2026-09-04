@@ -571,7 +571,7 @@ export class Jjwxc extends BaseRuleClass {
     let author = "";
     let introduction: string | null = null;
     let introductionHTML: HTMLElement | null = null;
-    let introCleanimages: AttachmentClass[] | null = null;
+    let introCleanimages: AttachmentClass[] | null;
     if (!getInformationBlocked()) {
       bookname = (
         document.querySelector('#oneboolt .bigtext') as HTMLElement
@@ -1175,7 +1175,8 @@ export class Jjwxc extends BaseRuleClass {
               ).toString(CryptoJS.enc.Utf8);
             } catch (e) {
               throw new Error(
-                `章节内容解码失败：content AES 解密产生无效 UTF-8 数据 (${e instanceof Error ? e.message : String(e)})`
+                `章节内容解码失败：content AES 解密产生无效 UTF-8 数据 (${e instanceof Error ? e.message : String(e)})`,
+                { cause: e }
               );
             }
           })();
@@ -1418,10 +1419,9 @@ export class Jjwxc extends BaseRuleClass {
     }
     function decodeVIPResopnce(responseHeader: string, responseText: string) {
       let v43, v38, dest;
-      let accessKey = "accesskey", keyString = "keystring";
       const keys = extractKeys(responseHeader);
-      accessKey = keys.accessKey;
-      keyString = keys.keyString;
+      const accessKey = keys.accessKey;
+      const keyString = keys.keyString;
       // log.debug(`responseHeader: ${responseHeader}`);
       // log.debug(`decodeVIPResopnce accesskey: ${accessKey}, keyString: ${keyString}`);
       const content = responseText.trim();
@@ -1451,7 +1451,7 @@ export class Jjwxc extends BaseRuleClass {
       const iv = CryptoJS.MD5(v38).toString().substring(0, 8);
       const keyHex = CryptoJS.enc.Utf8.parse(key);
       const ivHex = CryptoJS.enc.Utf8.parse(iv);
-      let result = '{"message":"try again!"}';
+      let result: string;
       try {
         const decrypted = CryptoJS.DES.decrypt(dest, keyHex, {
           iv: ivHex,
@@ -1597,7 +1597,7 @@ export class Jjwxc extends BaseRuleClass {
               if (response.status === 200) {
                 // if (isVIP) {
                 let decodeResponseText = String(response.responseText);
-                let resultI = JSON.parse('{"message":"try again!"}');
+                let resultI;
                 try {
                   resultI = JSON.parse(decodeResponseText);
                 } catch (e) {

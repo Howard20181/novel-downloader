@@ -1,0 +1,13 @@
+diff --git a/src/main.ts b/src/main.ts
+index b787693709426006d811ab27650f17145a7ef895..2cafe2fab4f1b0a8cce5228cdb8cb8b170eb3c04 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -117,7 +117,7 @@ function putImgDom(img: OffscreenCanvas, id?: string) {
+     } catch (error) {}
+ }
+ 
+-let createImageData = (data: Uint8ClampedArray, w: number, h: number) => {
++let createImageData = (data: Uint8ClampedArray<ArrayBuffer>, w: number, h: number) => {
+     return new ImageData(data, w, h);
+ };
+ 

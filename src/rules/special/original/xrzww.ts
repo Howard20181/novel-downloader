@@ -254,7 +254,7 @@ export class Xrzww extends BaseRuleClass {
 					content = decrypted.toString(CryptoJS.enc.Utf8);
 				} catch (e) {
 					log.debug(`VIP章节解密失败：${e}`);
-					throw new Error("VIP章节解密失败！");
+					throw new Error("VIP章节解密失败！", { cause: e });
 				}
 				contentRaw.innerText = content;
 				last_Modified = readNew.data.chapter_uptime;

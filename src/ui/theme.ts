@@ -60,7 +60,7 @@ export async function initTheme(shadowHost: HTMLElement) {
 async function extractPagePrimaryColor(): Promise<string | undefined> {
   function isVibrantStr(colorStr: string | null | undefined): boolean {
     if (!colorStr) return false;
-    let r = 0, g = 0, b = 0;
+    let r: number, g: number, b: number;
     if (colorStr.startsWith("#")) {
       let hex = colorStr.slice(1);
       if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");

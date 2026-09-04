@@ -212,7 +212,7 @@ function getClass(
       let dom = await getHtmlDOM(chapterUrl, charset);
       const content = document.createElement("div");
 
-      let flag = false;
+      let flag: boolean;
       do {
         contentAppend();
         const nextLink = (

@@ -75,7 +75,7 @@ export const linovelib = () => {
       const contentRaw = document.createElement("div");
       let currentUrl: string | undefined = chapterUrl;
       const patience = 3;
-      let patientCount = patience;
+      let patientCount: number;
       do {
         log.info(`[linovelib] Loading page in iframe: ${currentUrl}`);
         const html = await getFrameContentConditionWithWindow(currentUrl, (frame) => {
@@ -94,10 +94,8 @@ export const linovelib = () => {
           }
           return true;
         });
-        let isFailed = false;
         if (!html?.contentWindow) {
           contentRaw.innerHTML = "获取章节内容失败";
-          isFailed = true;
           break;
         }
 
@@ -107,11 +105,10 @@ export const linovelib = () => {
         const textContent = iframeDoc.querySelector("#TextContent");
         if (!textContent) {
           contentRaw.innerHTML = "获取章节内容失败";
-          isFailed = true;
           break;
         }
-        let nextLink: string|undefined = currentUrl;
-        if(!isFailed){
+        let nextLink: string | undefined;
+        {
           const allPs = textContent.querySelectorAll("p");
           log.info(`[linovelib] Total paragraphs before filter: ${allPs.length}`);
           let removedCount = 0;
@@ -134,9 +131,6 @@ export const linovelib = () => {
           });
           patientCount = patience;
           nextLink = (iframeDoc.querySelector(".mlfy_page > a:nth-child(5)") as HTMLAnchorElement)?.href;
-        } else {
-          log.info(`[linovelib] Failed to load page in iframe: ${currentUrl}`);
-          patientCount--;
         }
         html.remove();
         currentUrl = (nextLink && new URL(nextLink).pathname.includes("_")) ? nextLink : undefined;

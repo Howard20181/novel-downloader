@@ -39,7 +39,11 @@ export default {
     rules: [
       {
         test: /\.tsx?$/,
-        use: ["ts-loader"],
+        loader: "esbuild-loader",
+        options: {
+          loader: "ts",
+          target: "esnext",
+        },
         exclude: /node_modules/,
       },
       {

@@ -43,9 +43,8 @@ export class Sudugu extends BaseRuleClass {
 
         const chapters: Chapter[] = [];
         let chapterId = 0;
-        let flag = true;
         let dirurl = bookUrl;
-        while (flag) {
+        while (true) {
             const doc = await ggetHtmlDOM(dirurl, this.charset);
             Array.from(doc.querySelectorAll("div#list > ul > li > a")).forEach((element) => {
                 chapterId++;
@@ -75,11 +74,9 @@ export class Sudugu extends BaseRuleClass {
                 if(nextUrl.innerText.trim() === "下一页") {
                     dirurl = nextUrl.getAttribute("href")!;
                 } else {
-                    flag = false; //为了通过编译检查，实际无用
                     break;
                 }
             } else {
-                flag = false; //为了通过编译检查，实际无用
                 break;
             }
         }
@@ -106,8 +103,7 @@ export class Sudugu extends BaseRuleClass {
 
         let pageUrl = chapterUrl;
         const content = document.createElement("div");
-        let flag = true;
-        while (flag) {
+        while (true) {
             const doc = await ggetHtmlDOM(pageUrl, charset);
             content.innerHTML += (doc.querySelector("div.con") as HTMLElement).innerHTML;
             const pages = doc.querySelectorAll("div.prenext > span > a");
@@ -117,11 +113,9 @@ export class Sudugu extends BaseRuleClass {
                 if(nextUrl.innerText.trim() === "下一页") {
                     pageUrl = nextUrl.getAttribute("href")!;
                 } else {
-                    flag = false; //为了通过编译检查，实际无用
                     break;
                 }
             } else {
-                flag = false; //为了通过编译检查，实际无用
                 break;
             }
         }

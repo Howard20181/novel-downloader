@@ -255,7 +255,7 @@ export class HashDecoder {
    */
   private async generateImageHash(imageData: Uint8Array): Promise<string> {
     // Convert Uint8Array to Blob for ImageHasher
-    const blob = new Blob([imageData]);
+    const blob = new Blob([imageData as BlobPart]);
     return await this.imageHasher.hash(blob);
   }
 }

@@ -23,7 +23,7 @@ export class Lightnovel extends BaseRuleClass {
 
     public async bookParse() {
         const bookUrl = document.location.href;
-        let bookname = "";
+        let bookname: string;
         let author = "";
         let introDom = document.createElement("div") as HTMLElement;
         const additionalMetadate: BookAdditionalMetadate = {};

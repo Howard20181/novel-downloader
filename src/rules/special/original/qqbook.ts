@@ -46,13 +46,13 @@ export class QQBook extends BaseRuleClass {
         const sectionNumber = 0;
         let chapterNumber = 0;
         const chapters: Chapter[] = [];
-        let chapterList = null;
+        let chapterList;
         try {
             chapterList = document.querySelectorAll(".tab-panel")[1]
                 ?.querySelectorAll(".book-dir")[1]
                 ?.querySelectorAll("li.list");
         } catch (e) {
-            throw new Error("章节列表获取失败" + e);
+            throw new Error("章节列表获取失败" + e, { cause: e });
         }
         for (const s of Array.from(chapterList)) {
             const isVIP = s.querySelector(".lock") != null;

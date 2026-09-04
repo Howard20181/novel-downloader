@@ -1281,12 +1281,10 @@ export function convertBr(dom: HTMLElement, force = false) {
         continue;
       }
     }
-    brCount = 0;
     if (buffer.length !== 0) {
       const p = document.createElement("p");
       buffer.forEach((n) => p.appendChild(n));
       outDom.appendChild(p);
-      buffer = [];
     }
 
     return outDom;
@@ -1366,7 +1364,6 @@ export function convertFixWidthText(
   if (text !== "") {
     out.appendChild(new Text(text));
     out.appendChild(document.createElement("br"));
-    text = "";
   }
   htmlTrim(out);
   return convertBr(out);

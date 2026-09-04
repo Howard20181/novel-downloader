@@ -128,7 +128,11 @@ export const app = createApp({
     // Initialize all settings from stored values
     setting.enableDebug = GM_getValue('enableDebug', enableDebug.value);
     enableDebug.value = setting.enableDebug ?? enableDebug.value;
-    enableDebug.value ? log.setLevel("trace") : log.setLevel("info");
+    if (enableDebug.value) {
+      log.setLevel("trace");
+    } else {
+      log.setLevel("info");
+    }
     if (enableDebug.value) {
       debug();
     }
@@ -188,7 +192,11 @@ export const app = createApp({
 
       function setEnableDebug() {
         if (typeof config.enableDebug === "boolean") {
-          config.enableDebug ? log.setLevel("trace") : log.setLevel("info");
+          if (config.enableDebug) {
+            log.setLevel("trace");
+          } else {
+            log.setLevel("info");
+          }
           enableDebug.value = config.enableDebug;
           if (config.enableDebug) {
             debug();

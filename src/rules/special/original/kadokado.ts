@@ -91,7 +91,7 @@ export class kadokado extends BaseRuleClass {
 
     let chapterNumber = 0;
     let sectionNumber = 0;
-    let sectionChapterNumber = 0;
+    let sectionChapterNumber: number;
     const chapters: Chapter[] = [];
     for (const collection of collections) {
       sectionChapterNumber = 0;

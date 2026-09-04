@@ -127,7 +127,7 @@ export class fanqie extends BaseRuleClass {
                 });
             });
             let json = null;
-            let content = '';
+            let content: string;
             try {
                 json = JSON.parse(result);
             } catch (error) {

@@ -85,7 +85,7 @@ export class XRUnionread extends BaseRuleClass {
                     mode: "cors",
                 },
                 onload: function (response) {
-                    let resultI: DirectoryList = JSON.parse('{"message":"nd error"}');
+                    let resultI: DirectoryList;
                     if (response.status === 200) {
                         resultI = JSON.parse(String(response.responseText));
                     } else {
@@ -273,7 +273,7 @@ export class XRUnionread extends BaseRuleClass {
                     mode: "cors",
                 },
                 onload: function (response) {
-                    let resultI: ReadNovelByWeb = JSON.parse('{"message":"nd error"}');
+                    let resultI: ReadNovelByWeb;
                     if (response.status === 200) {
                         resultI = JSON.parse(String(response.responseText));
                     } else {

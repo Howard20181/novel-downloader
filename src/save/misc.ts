@@ -16,7 +16,7 @@ export function getSectionsObj(
 ): SectionObj[] {
   const _sectionsObj: SectionsObj = {};
   for (const chapter of chapters) {
-    let sectionNumber: number | null = null;
+    let sectionNumber: number | null;
     // const sectionName: string | null = null;
     if (chapter.sectionNumber && chapter.sectionName) {
       sectionNumber = chapter.sectionNumber;

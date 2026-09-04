@@ -59,7 +59,7 @@ export async function nextPageParse({
   let doc = await getHtmlDomFunc(chapterUrl, charset);
   const content = document.createElement("div");
 
-  let flag = false;
+  let flag: boolean;
   do {
     if (domPatch) {
       doc = await domPatch(doc);

@@ -17,8 +17,7 @@ export class Zongheng extends BaseRuleClass {
   }
 
   public async bookParse() {
-    let bookUrl = document.location.href.replace("/showchapter/", "/book/");
-    bookUrl = document.location.href.replace(/\?tabsName=.*$/, "");
+    const bookUrl = document.location.href.replace(/\?tabsName=.*$/, "");
     if (bookUrl != document.location.href) {
       document.location.href = bookUrl;
       return new Book({

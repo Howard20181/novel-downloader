@@ -51,7 +51,7 @@ export class Langge extends BaseRuleClass {
             i++;
             const onclickAttr = c.getAttribute("onclick")?.toString() ?? "";
             const match = onclickAttr.match(regex);
-            let chapterID = "-1";
+            let chapterID;
             if (match) {
                 chapterID = match[1];
             } else {

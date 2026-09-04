@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-types */
 import * as CryptoJS from "crypto-js";
 import { getAttachment } from "../../../lib/attachments";
 import { sleep } from "../../../lib/misc";

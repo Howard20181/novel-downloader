@@ -501,11 +501,11 @@
     "https://unpkg.com/crypto-js@4.2.0/crypto-js.js",
     "https://unpkg.com/fflate@0.8.2/umd/index.js",
     "https://unpkg.com/nunjucks@3.2.4/browser/nunjucks.min.js",
-    "https://unpkg.com/vue@3.3.13/dist/vue.global.prod.js",
-    "https://unpkg.com/onnxruntime-web@1.22.0/dist/ort.min.js",
+    "https://unpkg.com/vue@3.5.42/dist/vue.global.prod.js",
+    "https://unpkg.com/onnxruntime-web@1.29.0/dist/ort.min.js",
     "https://unpkg.com/@oovz/esearch-ocr/dist/eSearchOCR.umd.js",
     "https://unpkg.com/@techstark/opencv-js@4.11.0-release.1/dist/opencv.js",
     "https://unpkg.com/mdui@2.1.5/mdui.global.js",
-    "https://unpkg.com/css-tree@2.3.1/dist/csstree.js"
+    "https://unpkg.com/css-tree@3.2.1/dist/csstree.js"
   ]
 }
