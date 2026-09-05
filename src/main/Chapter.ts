@@ -38,6 +38,7 @@ export class Chapter {
   public contentHTML!: HTMLElement | null;
   public contentImages!: AttachmentClass[] | null;
   public additionalMetadate!: ChapterAdditionalMetadate | null;
+  public errorMessage: string | null = null;
 
   public chapterHtmlFileName!: string;
   public book!: Book;
@@ -159,9 +160,11 @@ isNull:${!this.contentHTML} 解析成功。`);
       })
       .catch(async (err: Error) => {
         this.retryTime++;
+        this.errorMessage = err?.message ?? String(err);
         log.error(
           `[Chapter]${this.chapterName}解析出错，第${this.retryTime}次重试，章节地址：${this.chapterUrl}`
         );
+        log.error(err);
 
         if (this.status !== Status.failed && this.retryTime < retryLimit) {
           await sleep(this.retryTime * 1500);

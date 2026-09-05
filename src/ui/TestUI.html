@@ -45,7 +45,12 @@
       <div class="chapter" v-html="getChapterHtml(chapter)"></div>
     </div>
     <div v-else>
-      <p v-if="this.isChapterFailed(chapter)">章节加载失败！</p>
+      <p v-if="this.isChapterFailed(chapter)">
+        章节加载失败！
+        <span v-if="chapter.errorMessage">{{ chapter.errorMessage }}</span>
+        <span v-else-if="this.isChapterAborted(chapter)">该章节已被跳过（未登录、未订阅或已锁定），不会发起下载。</span>
+        <span v-else>请打开“日志”选项卡或浏览器控制台查看详细错误。</span>
+      </p>
       <p v-else>请输入章节序号并点击预览</p>
     </div>
   </div>

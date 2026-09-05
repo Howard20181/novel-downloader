@@ -4,6 +4,7 @@ import { defineComponent, onMounted, reactive, Ref, ref } from "vue";
 import { GmWindow } from "../global";
 import { getAttachmentClassCache } from "../lib/attachments";
 import { sleep } from "../lib/misc";
+import { log } from "../log";
 import { Status } from "../main/main";
 import { Chapter } from "../main/Chapter";
 import { Book } from "../main/Book";
@@ -80,14 +81,30 @@ export default defineComponent({
     async function initChapter(n: number) {
       const chapters = book.chapters;
       const _chapter = chapters.filter((c) => c.chapterNumber === n)[0];
-      if (_chapter) {
-        if (_chapter.status === Status.pending) {
-          await _chapter.init();
-          Object.assign(chapter, _chapter);
-        } else {
-          Object.assign(chapter, _chapter);
-        }
+      if (!_chapter) {
+        log.error(`[TestUI]未找到章节序号 ${n}`);
+        return;
       }
+      if (_chapter.status === Status.aborted) {
+        log.error(
+          `[TestUI]章节已跳过，不会下载。章节名：${_chapter.chapterName}，原因：${
+            _chapter.errorMessage ?? "未登录、未订阅或章节已锁定"
+          }`
+        );
+        Object.assign(chapter, _chapter);
+        return;
+      }
+      if (_chapter.status === Status.pending) {
+        await _chapter.init();
+      }
+      if (_chapter.status === Status.failed) {
+        log.error(
+          `[TestUI]章节加载失败。章节名：${_chapter.chapterName}，URL：${_chapter.chapterUrl}，原因：${
+            _chapter.errorMessage ?? "未知错误，请查看日志选项卡"
+          }`
+        );
+      }
+      Object.assign(chapter, _chapter);
     }
 
     async function previewChapter() {
@@ -100,6 +117,8 @@ export default defineComponent({
         if (!isNaN(n) && n !== -99) {
           await initChapter(n);
         }
+      } catch (error) {
+        log.error("[TestUI]预览章节时出错", error);
       } finally {
         isLoading.value = false;
       }
@@ -113,6 +132,10 @@ export default defineComponent({
       return (
         _chapter.status === Status.failed || _chapter.status === Status.aborted
       );
+    }
+
+    function isChapterAborted(_chapter: Chapter) {
+      return _chapter.status === Status.aborted;
     }
 
     function getChapterHtml(_chapter: Chapter) {
@@ -185,6 +208,7 @@ export default defineComponent({
       chapter,
       isSeenChapter,
       isChapterFailed,
+      isChapterAborted,
       getChapterHtml,
       chapterNumber,
       previewChapter,

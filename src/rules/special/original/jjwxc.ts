@@ -43,6 +43,46 @@ function getJjwxcTokenFromOptions(): string | null {
   return token.length > 0 ? token : null;
 }
 
+function getCookieValue(name: string): string | null {
+  const prefix = `${name}=`;
+  const found = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix));
+  if (!found) {
+    return null;
+  }
+  try {
+    return decodeURIComponent(found.slice(prefix.length));
+  } catch {
+    return found.slice(prefix.length);
+  }
+}
+
+function isJjwxcLoggedIn(): boolean {
+  if (getJjwxcTokenFromOptions()) {
+    return true;
+  }
+  // 旧版页面用 #jj_login 表示未登录；现站点改为 readerid cookie / loginUserDiv
+  if (document.getElementById("jj_login")) {
+    return false;
+  }
+  if (getCookieValue("readerid")) {
+    return true;
+  }
+  const loginUserDiv = document.getElementById("loginUserDiv");
+  if (loginUserDiv) {
+    const style = loginUserDiv.getAttribute("style") ?? "";
+    if (/display\s*:\s*none/i.test(style)) {
+      return false;
+    }
+    if (loginUserDiv.textContent?.trim()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function setJjwxcToken(token: string): string | null {
   const normalized = normalizeJjwxcToken(token);
   if (!normalized) {
@@ -736,13 +776,10 @@ export class Jjwxc extends BaseRuleClass {
                 charset: this.charset,
                 options: {},
               });
-              const isLogin = () => {
-                if (getJjwxcTokenFromOptions())
-                  return true;
-                return !document.getElementById("jj_login");
-              };
-              if (isVIP() && !isLogin()) {
+              if (isVIP() && !isJjwxcLoggedIn()) {
                 chapter.status = Status.aborted;
+                chapter.errorMessage =
+                  "未登录晋江或未填写 Android token，VIP 章节已跳过。请先登录网页，或在设置中填写 token。";
               }
               chapters.push(chapter);
             }
@@ -764,13 +801,10 @@ export class Jjwxc extends BaseRuleClass {
               charset: this.charset,
               options: {},
             });
-            const isLogin = () => {
-              if (getJjwxcTokenFromOptions())
-                return true;
-              return !document.getElementById("jj_login");
-            };
-            if (isVIP() && !isLogin()) {
+            if (isVIP() && !isJjwxcLoggedIn()) {
               chapter.status = Status.aborted;
+              chapter.errorMessage =
+                "未登录晋江或未填写 Android token，VIP 章节已跳过。请先登录网页，或在设置中填写 token。";
             }
             chapters.push(chapter);
           }
@@ -793,6 +827,7 @@ export class Jjwxc extends BaseRuleClass {
             options: {},
           });
           chapter.status = Status.aborted;
+          chapter.errorMessage = "章节已锁定，无法下载。";
           chapters.push(chapter);
         }
       }
@@ -1294,10 +1329,14 @@ export class Jjwxc extends BaseRuleClass {
         );
       };
 
-      if (isPaidF()) {
-        const ChapterName = (
-          doc.querySelector("div.noveltext h2") as HTMLElement
-        ).innerText.trim();
+      if (!isPaidF()) {
+        throw new Error(
+          "当前 VIP 章节未订阅，或页面未返回正文。请确认已购买该章，并已登录网页 / 填写 Android token。"
+        );
+      }
+      const ChapterName = (
+        doc.querySelector("div.noveltext h2") as HTMLElement
+      ).innerText.trim();
 
         const content = document.createElement("div");
         content.innerHTML = decrypt(doc);
@@ -1371,15 +1410,6 @@ export class Jjwxc extends BaseRuleClass {
           contentImages: images,
           additionalMetadate: null,
         };
-      }
-      return {
-        chapterName,
-        contentRaw: null,
-        contentText: null,
-        contentHTML: null,
-        contentImages: null,
-        additionalMetadate: null,
-      };
     }
     // interface vipChapterInfo {
     //   downloadContent: ChapterInfo[];
@@ -1396,11 +1426,11 @@ export class Jjwxc extends BaseRuleClass {
       sayBodyV2: string | null; // 只包括作者有话说
       upDown: number | null; //1,
       update: number | null; //1,
-      content: string; //"另一种可能\n
+      content?: string; //"另一种可能\n
       isvip: number | null; //0,
       isProtect: number | null; //1,
-      encryptField: Array<string>;//["content"]
-      encryptType: string; //"jj",
+      encryptField?: Array<string>;//["content"]
+      encryptType?: string; //"jj",
       authorid: string; //"376815",
       autobuystatus: string | null; //"0",
       noteislock: string | null; //"1"
@@ -1639,14 +1669,14 @@ export class Jjwxc extends BaseRuleClass {
       }
       log.debug(`本章请求结果如下： response code ${result?.code}, info ${result.message}`);
       retryTime = 0;
-      if ("content" in result) {
+      if ("content" in result && result.content) {
         const chapterinfo = "";//novelID + "-" + chapterID;
         let content = result.content;
         let postscript = result.sayBodyV2 ?? " ";
         // if (isVIP) {
-        if (result.encryptField.includes("content"))
+        if (result.encryptField?.includes("content") && result.encryptType)
           content = decodeVIPText(content, result.encryptType, chapterinfo);
-        if (result.encryptField.includes("sayBodyV2"))
+        if (result.encryptField?.includes("sayBodyV2") && result.encryptType)
           postscript = decodeVIPText(postscript, result.encryptType, chapterinfo);
         // }
         const contentRaw = document.createElement("pre");
@@ -1711,14 +1741,11 @@ export class Jjwxc extends BaseRuleClass {
         };
       } else {
         await sleep(1000 + Math.round(Math.random() * 1000));
-        return {
-          chapterName,
-          contentRaw: null,
-          contentText: null,
-          contentHTML: null,
-          contentImages: null,
-          additionalMetadate: null,
-        };
+        throw new Error(
+          result.message
+            ? `晋江 API 未返回正文：${result.message}`
+            : "晋江 API 未返回正文，请确认已订阅该章并填写有效 Android token。"
+        );
       }
     }
     const token = getJjwxcTokenFromOptions();
