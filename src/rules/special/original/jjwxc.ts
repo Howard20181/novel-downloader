@@ -10,9 +10,10 @@ import { rm, rms } from "../../../lib/dom";
 import { introDomHandle } from "../../../lib/rule";
 import { log } from "../../../log";
 import { ReferrerMode, Status } from "../../../main/main";
-import { Chapter } from "../../../main/Chapter";
+import { Chapter, ChapterAbortError } from "../../../main/Chapter";
 import { Book, BookAdditionalMetadate } from "../../../main/Book";
 import { BaseRuleClass, ChapterParseObject } from "../../../rules";
+import { SaveBook } from "../../../save/save";
 import { retryLimit } from "../../../setting";
 import { buildFontTableViaOCR } from "../../lib/jjwxcFontDecode";
 import { UnsafeWindow } from "../../../global";
@@ -24,6 +25,8 @@ import * as CryptoJS from "crypto-js";
 type JJWindow = UnsafeWindow & { getCookie: (key: string) => string };
 
 const AUTHOR_SAY_PREFIX = "作者有话说："; // before it was "-".repeat(20)
+const JJ_LOGIN_ABORT_MESSAGE =
+  "未登录晋江或未填写 Android token，VIP 章节已跳过。请先登录网页，或在设置中填写 token。";
 function normalizeJjwxcToken(token: string): string {
   return String(token).replace(/undefined|token=|\s|&.*$/g, "").trim();
 }
@@ -778,8 +781,7 @@ export class Jjwxc extends BaseRuleClass {
               });
               if (isVIP() && !isJjwxcLoggedIn()) {
                 chapter.status = Status.aborted;
-                chapter.errorMessage =
-                  "未登录晋江或未填写 Android token，VIP 章节已跳过。请先登录网页，或在设置中填写 token。";
+                chapter.errorMessage = JJ_LOGIN_ABORT_MESSAGE;
               }
               chapters.push(chapter);
             }
@@ -803,8 +805,7 @@ export class Jjwxc extends BaseRuleClass {
             });
             if (isVIP() && !isJjwxcLoggedIn()) {
               chapter.status = Status.aborted;
-              chapter.errorMessage =
-                "未登录晋江或未填写 Android token，VIP 章节已跳过。请先登录网页，或在设置中填写 token。";
+              chapter.errorMessage = JJ_LOGIN_ABORT_MESSAGE;
             }
             chapters.push(chapter);
           }
@@ -844,6 +845,30 @@ export class Jjwxc extends BaseRuleClass {
     });
   }
 
+  protected async initChapters(
+    book: Book,
+    saveBookObj: SaveBook
+  ): Promise<Chapter[]> {
+    // VIP 章节的“未登录跳过”判定发生在目录构建时，token 可能在那之后才注入或登录。
+    // 每次开始下载前重判一次，把已具备条件的章节恢复为待下载。
+    let restored = 0;
+    if (isJjwxcLoggedIn()) {
+      for (const chapter of book.chapters) {
+        if (chapter.isVIP && chapter.status === Status.aborted) {
+          chapter.status = Status.pending;
+          chapter.errorMessage = null;
+          restored++;
+        }
+      }
+    }
+    if (restored > 0) {
+      log.info(
+        `[jjwxc]检测到已登录/已填写 token，恢复 ${restored} 个此前跳过的 VIP 章节`
+      );
+    }
+    return super.initChapters(book, saveBookObj);
+  }
+
   public async chapterParse(
     chapterUrl: string,
     chapterName: string | null,
@@ -852,6 +877,10 @@ export class Jjwxc extends BaseRuleClass {
     charset: string,
     options: object
   ) {
+    // 每次请求章节都即时检测登录态；不具备条件则按“跳过”处理，不占用重试与失败计数
+    if (isVIP && !isJjwxcLoggedIn()) {
+      throw new ChapterAbortError(JJ_LOGIN_ABORT_MESSAGE);
+    }
     async function publicChapter(): Promise<ChapterParseObject> {
       const doc = await getHtmlDOM(chapterUrl, charset);
       const content = doc.querySelector("div.novelbody > div") as HTMLElement;
@@ -1623,6 +1652,7 @@ export class Jjwxc extends BaseRuleClass {
               //  "accept-encoding": "gzip",
             },
             method: "GET",
+            timeout: 60000,
             onload: function (response) {
               if (response.status === 200) {
                 // if (isVIP) {
@@ -1639,6 +1669,16 @@ export class Jjwxc extends BaseRuleClass {
                   log.debug(`json：${decodeResponseText}`);
                   resultI = JSON.parse('{"message":"try again!"}');
                 }
+                if (
+                  resultI &&
+                  resultI.code === undefined &&
+                  resultI.message === undefined &&
+                  !resultI.content
+                ) {
+                  log.debug(
+                    `[jjwxc] API 返回了无法识别的结构，原始报文（前500字符）：${decodeResponseText.slice(0, 500)}`
+                  );
+                }
                 resolve(resultI);
                 // } else {
                 //   const resultI: ChapterInfo = JSON.parse(
@@ -1654,6 +1694,19 @@ export class Jjwxc extends BaseRuleClass {
                 resolve(resultI);
               }
             },
+            onerror: function (response) {
+              const r = response as
+                | { status?: number; error?: string }
+                | undefined;
+              log.error(
+                `[jjwxc] API 请求网络错误：status=${r?.status ?? "unknown"}, error=${r?.error ?? "unknown"}`
+              );
+              resolve(JSON.parse('{"message":"try again!"}'));
+            },
+            ontimeout: function () {
+              log.error(`[jjwxc] API 请求超时：${url}`);
+              resolve(JSON.parse('{"message":"try again!"}'));
+            },
           });
         });
       }
@@ -1667,7 +1720,9 @@ export class Jjwxc extends BaseRuleClass {
         }
         result = await getChapterInfo(chapterGetInfoUrl.toString());
       }
-      log.debug(`本章请求结果如下： response code ${result?.code}, info ${result.message}`);
+      log.debug(
+        `本章请求结果如下： code=${result?.code ?? "无"}, message=${result?.message ?? "无"}, content长度=${typeof result?.content === "string" ? result.content.length : 0}`
+      );
       retryTime = 0;
       if ("content" in result && result.content) {
         const chapterinfo = "";//novelID + "-" + chapterID;
@@ -1744,7 +1799,7 @@ export class Jjwxc extends BaseRuleClass {
         throw new Error(
           result.message
             ? `晋江 API 未返回正文：${result.message}`
-            : "晋江 API 未返回正文，请确认已订阅该章并填写有效 Android token。"
+            : `晋江 API 未返回正文（返回内容无法识别：${JSON.stringify(result)?.slice(0, 200) ?? "空"}）。请确认已订阅该章并填写有效 Android token。`
         );
       }
     }

@@ -397,7 +397,10 @@ export abstract class BaseRuleClass {
       chapter: Chapter,
       saveObj: SaveBook
     ): Promise<Chapter> {
-      if (chapter.contentHTML !== undefined) {
+      if (
+        chapter.contentHTML !== undefined &&
+        chapter.status !== Status.aborted
+      ) {
         await saveObj.addChapter(chapter);
         (progress as ProgressVM).finishedChapterNumber++;
       }

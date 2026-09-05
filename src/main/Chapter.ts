@@ -12,6 +12,18 @@ export interface ChapterAdditionalMetadate {
   tags?: string[];
 }
 
+/**
+ * 章节级“跳过”信号：当前请求时不具备下载条件（如未登录/未填写 token），
+ * 本次直接跳过该章节，不重试、不计入连续失败。
+ * 与构建目录时的 Status.aborted 不同，它在每次请求章节时即时判定。
+ */
+export class ChapterAbortError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ChapterAbortError";
+  }
+}
+
 export class Chapter {
   public bookUrl: string;
   public bookname: string;
@@ -110,6 +122,10 @@ export class Chapter {
 分卷名：${this.sectionName}, URL:${this.chapterUrl}, \
 VIP:${this.isVIP}, Paid:${this.isPaid}, \
 isNull:${!this.contentHTML} 解析出错。`);
+    } else if (this.status === Status.aborted) {
+      log.info(`[Chapter]章节名：${this.chapterName}, \
+分卷名：${this.sectionName}, URL:${this.chapterUrl}, \
+VIP:${this.isVIP}, Paid:${this.isPaid} 已跳过：${this.errorMessage ?? ""}`);
     } else {
       log.info(`[Chapter]章节名：${this.chapterName}, \
 分卷名：${this.sectionName}, URL:${this.chapterUrl}, \
@@ -159,6 +175,21 @@ isNull:${!this.contentHTML} 解析成功。`);
         return obj;
       })
       .catch(async (err: Error) => {
+        if (err instanceof ChapterAbortError) {
+          this.status = Status.aborted;
+          this.errorMessage = err.message;
+          log.info(
+            `[Chapter]章节名：${this.chapterName}, URL:${this.chapterUrl} 已跳过：${err.message}`
+          );
+          return {
+            chapterName: this.chapterName,
+            contentRaw: null,
+            contentText: null,
+            contentHTML: null,
+            contentImages: null,
+            additionalMetadate: null,
+          };
+        }
         this.retryTime++;
         this.errorMessage = err?.message ?? String(err);
         log.error(

@@ -86,15 +86,24 @@ export default defineComponent({
         return;
       }
       if (_chapter.status === Status.aborted) {
-        log.error(
-          `[TestUI]章节已跳过，不会下载。章节名：${_chapter.chapterName}，原因：${
-            _chapter.errorMessage ?? "未登录、未订阅或章节已锁定"
-          }`
+        if (!_chapter.chapterUrl) {
+          log.error(
+            `[TestUI]章节已跳过，不会下载。章节名：${_chapter.chapterName}，原因：${
+              _chapter.errorMessage ?? "未登录、未订阅或章节已锁定"
+            }`
+          );
+          Object.assign(chapter, _chapter);
+          return;
+        }
+        // 有地址的跳过章节多为构建目录时未登录/无 token；每次预览都重新请求并即时重判
+        log.info(
+          `[TestUI]章节此前被跳过，重新尝试解析。章节名：${_chapter.chapterName}`
         );
-        Object.assign(chapter, _chapter);
-        return;
       }
-      if (_chapter.status === Status.pending) {
+      if (
+        _chapter.status === Status.pending ||
+        _chapter.status === Status.aborted
+      ) {
         await _chapter.init();
       }
       if (_chapter.status === Status.failed) {
