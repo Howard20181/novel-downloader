@@ -73,6 +73,11 @@ function isJjwxcLoggedIn(): boolean {
   if (getCookieValue("readerid")) {
     return true;
   }
+  // 现站点已登录后页头会渲染 span.readerid（readerid cookie 为 httpOnly，JS 读不到）
+  const readeridSpan = document.querySelector("span.readerid");
+  if (readeridSpan?.textContent?.trim()) {
+    return true;
+  }
   const loginUserDiv = document.getElementById("loginUserDiv");
   if (loginUserDiv) {
     const style = loginUserDiv.getAttribute("style") ?? "";
